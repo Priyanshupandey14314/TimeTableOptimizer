@@ -2,7 +2,7 @@ package com.timemaster.timetableoptimizer.model;
 import jakarta.persistence.*;
 
 @Entity
-public class TimeTableEntry {
+public class TimetableEntry {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
