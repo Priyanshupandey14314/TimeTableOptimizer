@@ -6,24 +6,25 @@ function App() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    axios.get("http://localhost:8080/api/hello")
+    axios.get("/api/subjects")
       .then(response => {
-        setMessage(response.data);
+        setMessage("Connected! Found " + response.data.length + " subjects.");
+        console.log(response.data);
       })
       .catch(error => {
         console.error("There was an error!", error);
+        setMessage("Error connecting to backend: " + error.message);
       });
   }, []);
 
   return (
-  //   <div style={{ textAlign: "center", marginTop: "50px" }}>
-  //     <h1 className="text-3xl font-bold red underline">
-  //   SpringBoot+React
-  // </h1>
-  //     <p>Message from backend:</p>
-  //     <h2>{message}</h2>
-  //   </div>
-  <Navbar/>
+    <div>
+      <Navbar />
+      <div className="p-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">Time Table Optimizer</h1>
+        <p className="text-lg">{message}</p>
+      </div>
+    </div>
   );
 }
 
