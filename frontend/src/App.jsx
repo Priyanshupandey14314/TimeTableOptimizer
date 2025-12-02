@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-
+import "tailwindcss";
+import Navbar from "./components/Navbar";
 function App() {
   const [message, setMessage] = useState("");
 
@@ -15,11 +16,14 @@ function App() {
   }, []);
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>React + Spring Boot Integration</h1>
-      <p>Message from backend:</p>
-      <h2>{message}</h2>
-    </div>
+  //   <div style={{ textAlign: "center", marginTop: "50px" }}>
+  //     <h1 className="text-3xl font-bold red underline">
+  //   SpringBoot+React
+  // </h1>
+  //     <p>Message from backend:</p>
+  //     <h2>{message}</h2>
+  //   </div>
+  <Navbar/>
   );
 }
 
