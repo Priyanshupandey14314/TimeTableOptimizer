@@ -1,30 +1,32 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import "tailwindcss";
-import Navbar from "./components/Navbar";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Teachers from './pages/Teachers';
+import Subjects from './pages/Subjects';
+import Rooms from './pages/Rooms';
+import Classes from './pages/Classes';
+import TimeSlots from './pages/TimeSlots';
+import GenerateTimetable from './pages/GenerateTimetable';
+import { ToastProvider } from './context/ToastContext';
+
 function App() {
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    axios.get("/api/subjects")
-      .then(response => {
-        setMessage("Connected! Found " + response.data.length + " subjects.");
-        console.log(response.data);
-      })
-      .catch(error => {
-        console.error("There was an error!", error);
-        setMessage("Error connecting to backend: " + error.message);
-      });
-  }, []);
-
   return (
-    <div>
-      <Navbar />
-      <div className="p-4 text-center">
-        <h1 className="text-2xl font-bold mb-4">Time Table Optimizer</h1>
-        <p className="text-lg">{message}</p>
-      </div>
-    </div>
+    <ToastProvider>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/teachers" element={<Teachers />} />
+            <Route path="/subjects" element={<Subjects />} />
+            <Route path="/rooms" element={<Rooms />} />
+            <Route path="/classes" element={<Classes />} />
+            <Route path="/timeslots" element={<TimeSlots />} />
+            <Route path="/generate" element={<GenerateTimetable />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </ToastProvider>
   );
 }
 
