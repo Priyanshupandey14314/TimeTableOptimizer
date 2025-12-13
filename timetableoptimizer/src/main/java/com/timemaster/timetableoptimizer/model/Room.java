@@ -9,9 +9,8 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String roomNumber;
-    private String name;
     private int capacity;
-    private String roomType;   // LAB / NORMAL
+    private String roomType;
 
     // Getters and Setters
 
@@ -29,14 +28,6 @@ public class Room {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public int getCapacity() {

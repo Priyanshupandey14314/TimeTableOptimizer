@@ -20,10 +20,10 @@ public class GAEngine {
     private final TimeSlotRepository timeSlotRepository;
 
     public GAEngine(ClassSectionRepository classSectionRepository,
-                   TeacherRepository teacherRepository,
-                   SubjectRepository subjectRepository,
-                   RoomRepository roomRepository,
-                   TimeSlotRepository timeSlotRepository) {
+            TeacherRepository teacherRepository,
+            SubjectRepository subjectRepository,
+            RoomRepository roomRepository,
+            TimeSlotRepository timeSlotRepository) {
         this.classSectionRepository = classSectionRepository;
         this.teacherRepository = teacherRepository;
         this.subjectRepository = subjectRepository;
@@ -33,8 +33,20 @@ public class GAEngine {
 
     public Map<String, Object> generateTimetable(TimeTableRequest request) {
         // Fetch required data from database
-        ClassSection classSection = classSectionRepository.findById(request.getClassSectionId())
-                .orElseThrow(() -> new RuntimeException("ClassSection not found"));
+        List<ClassSection> classSections = new ArrayList<>();
+
+        if (request.getDepartment() != null && !request.getDepartment().isEmpty()) {
+            classSections = classSectionRepository.findByDepartment(request.getDepartment());
+            if (classSections.isEmpty()) {
+                throw new RuntimeException("No classes found for department: " + request.getDepartment());
+            }
+        } else if (request.getClassSectionId() != null) {
+            ClassSection classSection = classSectionRepository.findById(request.getClassSectionId())
+                    .orElseThrow(() -> new RuntimeException("ClassSection not found"));
+            classSections.add(classSection);
+        } else {
+            throw new RuntimeException("Either ClassSectionId or Department must be provided");
+        }
 
         List<Teacher> teachers = teacherRepository.findAllById(request.getTeacherIds());
         List<Subject> subjects = subjectRepository.findAllById(request.getSubjectIds());
@@ -46,13 +58,9 @@ public class GAEngine {
             throw new RuntimeException("Insufficient data for timetable generation");
         }
 
-        // Create list with single class section
-        List<ClassSection> classSections = new ArrayList<>();
-        classSections.add(classSection);
-
         // Initialize Genetic Algorithm
         GeneticAlgorithm ga = new GeneticAlgorithm(classSections, subjects, teachers, rooms, timeSlots);
-        
+
         // Run GA to generate timetable
         Chromosome bestSolution = ga.evolve();
 
@@ -69,7 +77,7 @@ public class GAEngine {
             entry.put("classSection", gene.getClassSection().getName());
             entry.put("subject", gene.getSubject().getName());
             entry.put("teacher", gene.getTeacher() != null ? gene.getTeacher().getName() : "N/A");
-            entry.put("room", gene.getRoom().getName());
+            entry.put("room", gene.getRoom() != null ? gene.getRoom().getRoomNumber() : "N/A");
             entry.put("day", gene.getTimeSlot().getDay());
             entry.put("startTime", gene.getTimeSlot().getStartTime());
             entry.put("endTime", gene.getTimeSlot().getEndTime());
@@ -84,4 +92,3 @@ public class GAEngine {
         return response;
     }
 }
-

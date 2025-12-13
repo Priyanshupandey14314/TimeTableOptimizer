@@ -28,6 +28,7 @@ public class ClassSectionService {
     }
 
     public ClassSection updateClassSection(Long id, ClassSection classSection) {
+        classSection.setId(id);
         return classSectionRepository.save(classSection);
     }
 
@@ -35,4 +36,3 @@ public class ClassSectionService {
         classSectionRepository.deleteById(id);
     }
 }
-

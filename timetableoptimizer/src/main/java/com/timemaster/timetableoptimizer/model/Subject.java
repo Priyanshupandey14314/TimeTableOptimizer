@@ -1,4 +1,6 @@
 package com.timemaster.timetableoptimizer.model;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,6 +14,7 @@ public class Subject {
     private String code;
 
     @ManyToOne
+    @JsonBackReference
     @JoinColumn(name = "teacher_id")
     private Teacher teacher;
 

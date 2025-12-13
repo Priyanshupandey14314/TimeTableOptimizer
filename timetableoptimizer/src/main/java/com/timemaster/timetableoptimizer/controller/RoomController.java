@@ -1,6 +1,5 @@
 package com.timemaster.timetableoptimizer.controller;
 
-
 import com.timemaster.timetableoptimizer.model.Room;
 import com.timemaster.timetableoptimizer.services.RoomService;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +24,11 @@ public class RoomController {
 
     @GetMapping
     public List<Room> getAll() {
-        return roomService.getAllRooms();
+        long start = System.currentTimeMillis();
+        List<Room> rooms = roomService.getAllRooms();
+        long end = System.currentTimeMillis();
+        System.out.println("Fetching all rooms took: " + (end - start) + "ms");
+        return rooms;
     }
 
     @GetMapping("/{id}")

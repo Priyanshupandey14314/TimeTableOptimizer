@@ -1,23 +1,25 @@
 package com.timemaster.timetableoptimizer.model;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.List;
+
 @Entity
 public class Teacher {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String name;
-
     private int maxHoursPerDay;
     private int maxHoursPerWeek;
 
     @ElementCollection
-    private List<String> availableSlots;   // Example: "MON_1", "TUE_3"
+    private List<String> availableSlots; // Example: "MON_1", "TUE_3"
 
     @OneToMany(mappedBy = "teacher")
+//    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonManagedReference
     private List<Subject> subjects;
-
     // Getters and Setters
 
     public Long getId() {

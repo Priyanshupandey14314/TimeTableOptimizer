@@ -37,6 +37,7 @@ public class TimeSlotService {
                     existing.setDay(updatedSlot.getDay());
                     existing.setStartTime(updatedSlot.getStartTime());
                     existing.setEndTime(updatedSlot.getEndTime());
+                    existing.setPeriodNumber(updatedSlot.getPeriodNumber());
                     return timeSlotRepository.save(existing);
                 })
                 .orElse(null);

@@ -1,31 +1,37 @@
-# Implementation Plan - Frontend-Backend Connection
+# Implementation Plan - Final Polish & "100% Working" Verification
 
 ## Goal Description
-Establish a working connection between the React frontend and Spring Boot backend.
-Currently, the frontend tries to fetch from `/api/hello`, but the endpoint is missing and CORS/Proxy is not configured.
+We are entering the final phase to ensure the Time Table Optimizer is "100% working". This involves polishing the UI consistency (Neon Loader) and, critically, verifying the end-to-end generation flow with a rigorous integration test.
+
+## User Review Required
+> [!NOTE]
+> I will be adding a new `IntegrationTest` to verify the full generation pipeline without needing manual UI clicking. This ensures the Core Algorithm connects correctly to the API.
 
 ## Proposed Changes
 
-### Backend
-#### [NEW] [HelloController.java](file:///f:/SpringBootProjects/TTO/timetableoptimizer/src/main/java/com/timemaster/timetableoptimizer/controller/HelloController.java)
-- Create a simple controller with `@GetMapping("/api/hello")` returning a welcome message.
+### Frontend Polish
+#### [MODIFY] [GenerateTimetable.jsx](file:///f:/SpringBootProjects/TTO/frontend/src/pages/GenerateTimetable.jsx)
+- **Change**: Replace the default spinner with the `NeonTriangleLoader` component.
+- **Reason**: To maintain consistent "Neon" aesthetics across the application.
 
-### Frontend
-#### [MODIFY] [vite.config.js](file:///f:/SpringBootProjects/TTO/frontend/vite.config.js)
-- Add `server.proxy` configuration to forward `/api` requests to `http://localhost:8080`.
-
-#### [MODIFY] [App.jsx](file:///f:/SpringBootProjects/TTO/frontend/src/App.jsx)
-- Uncomment the display logic to show the message from the backend.
-- Ensure the API call uses the relative path `/api/hello` (or relies on proxy).
+### Backend Verification
+#### [NEW] [TimetableIntegrationTest.java](file:///f:/SpringBootProjects/TTO/timetableoptimizer/src/test/java/com/timemaster/timetableoptimizer/integration/TimetableIntegrationTest.java)
+- **New Test**: A Spring Boot Integration Test that:
+    1.  Creates Reference Data (Teacher, Room, Subject, Class).
+    2.  Calls the `POST /api/timetable/generate` endpoint.
+    3.  Verifies the response contains a valid timetable (fitness > 0, non-empty list).
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `mvn clean package` to ensure backend compiles.
-- Run `npm run dev` (user action) and check the browser.
+- **Run All Tests**: `mvn test`
+    - This will run the new `TimetableIntegrationTest` and all existing unit tests.
+- **Success Criteria**: All tests pass, specifically confirming the Genetic Algorithm produces a valid result via the API.
 
-### Manual Verification
-- Start Backend (`mvn spring-boot:run`).
-- Start Frontend (`npm run dev`).
-- Open App in browser.
-- Verify "Message from backend: ..." is displayed.
+### Manual Verification (User)
+1.  **Start Application**: Run backend and frontend.
+2.  **Navigate to Generate**: Go to `/generate`.
+3.  **Select Data**: Pick a Class, Teachers, and Subjects.
+4.  **Click Generate**:
+    -   **Observe**: The `NeonTriangleLoader` should appear.
+    -   **Result**: A table of classes should appear after a few seconds.

@@ -4,6 +4,7 @@ import java.util.List;
 
 public class TimeTableRequest {
     private Long classSectionId;
+    private String department;
     private List<Long> teacherIds;
     private List<Long> subjectIds;
 
@@ -27,6 +28,14 @@ public class TimeTableRequest {
         this.classSectionId = classSectionId;
     }
 
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
     public List<Long> getTeacherIds() {
         return teacherIds;
     }
@@ -43,4 +52,3 @@ public class TimeTableRequest {
         this.subjectIds = subjectIds;
     }
 }
-

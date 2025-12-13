@@ -8,6 +8,7 @@ public class TimeTableOptimizerApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TimeTableOptimizerApplication.class, args);
 		System.out.println("Spring boot backend started");
+
 	}
 
 }

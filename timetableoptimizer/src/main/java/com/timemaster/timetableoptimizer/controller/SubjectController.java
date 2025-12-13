@@ -19,6 +19,12 @@ public class SubjectController {
 
     @PostMapping
     public Subject create(@RequestBody Subject subject) {
+        System.out.println("Received Subject: " + subject);
+        if (subject.getTeacher() != null) {
+            System.out.println("Teacher ID: " + subject.getTeacher().getId());
+        } else {
+            System.out.println("Teacher is null");
+        }
         return subjectService.addSubject(subject);
     }
 
@@ -42,4 +48,3 @@ public class SubjectController {
         subjectService.deleteSubject(id);
     }
 }
-

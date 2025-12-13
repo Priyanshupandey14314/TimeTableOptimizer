@@ -28,6 +28,7 @@ public class SubjectService {
     }
 
     public Subject updateSubject(Long id, Subject subject) {
+        subject.setId(id);
         return subjectRepository.save(subject);
     }
 
@@ -35,4 +36,3 @@ public class SubjectService {
         subjectRepository.deleteById(id);
     }
 }
-
