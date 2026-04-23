@@ -10,22 +10,24 @@ public class FitnessCalculator {
         List<Gene> genes = chromosome.getGenes();
 
         // Penalty for teacher conflicts (same teacher at same time)
-        fitness -= calculateTeacherConflicts(genes) * 50;
+        // CRITICAL: Heavy penalty to ensure disqualification
+        fitness -= calculateTeacherConflicts(genes) * 1000;
 
         // Penalty for room conflicts (same room at same time)
-        fitness -= calculateRoomConflicts(genes) * 50;
+        fitness -= calculateRoomConflicts(genes) * 1000;
 
         // Penalty for class section conflicts (same class at same time)
-        fitness -= calculateClassSectionConflicts(genes) * 50;
+        fitness -= calculateClassSectionConflicts(genes) * 1000;
 
         // Penalty for teacher availability violations
-        fitness -= calculateTeacherAvailabilityViolations(genes) * 30;
+        fitness -= calculateTeacherAvailabilityViolations(genes) * 500;
 
         // Penalty for room capacity violations
-        fitness -= calculateRoomCapacityViolations(genes) * 20;
+        fitness -= calculateRoomCapacityViolations(genes) * 50;
 
-        // Penalty for teacher workload violations
         fitness -= calculateTeacherWorkloadViolations(genes) * 25;
+
+        fitness -= calculateRoomTypeViolations(genes) * 50;
 
         // Ensure fitness is non-negative
         return Math.max(0, fitness);
@@ -36,15 +38,16 @@ public class FitnessCalculator {
         Map<String, Set<Gene>> teacherTimeMap = new HashMap<>();
 
         for (Gene gene : genes) {
-            if (gene.getTeacher() == null) continue;
-            
-            String key = gene.getTeacher().getId() + "_" + 
-                        gene.getTimeSlot().getDay() + "_" + 
-                        gene.getTimeSlot().getPeriodNumber();
-            
+            if (gene.getTeacher() == null)
+                continue;
+
+            String key = gene.getTeacher().getId() + "_" +
+                    gene.getTimeSlot().getDay() + "_" +
+                    gene.getTimeSlot().getPeriodNumber();
+
             teacherTimeMap.putIfAbsent(key, new HashSet<>());
             Set<Gene> existing = teacherTimeMap.get(key);
-            
+
             if (!existing.isEmpty()) {
                 conflicts++;
             }
@@ -59,13 +62,13 @@ public class FitnessCalculator {
         Map<String, Set<Gene>> roomTimeMap = new HashMap<>();
 
         for (Gene gene : genes) {
-            String key = gene.getRoom().getId() + "_" + 
-                        gene.getTimeSlot().getDay() + "_" + 
-                        gene.getTimeSlot().getPeriodNumber();
-            
+            String key = gene.getRoom().getId() + "_" +
+                    gene.getTimeSlot().getDay() + "_" +
+                    gene.getTimeSlot().getPeriodNumber();
+
             roomTimeMap.putIfAbsent(key, new HashSet<>());
             Set<Gene> existing = roomTimeMap.get(key);
-            
+
             if (!existing.isEmpty()) {
                 conflicts++;
             }
@@ -80,13 +83,13 @@ public class FitnessCalculator {
         Map<String, Set<Gene>> classTimeMap = new HashMap<>();
 
         for (Gene gene : genes) {
-            String key = gene.getClassSection().getId() + "_" + 
-                        gene.getTimeSlot().getDay() + "_" + 
-                        gene.getTimeSlot().getPeriodNumber();
-            
+            String key = gene.getClassSection().getId() + "_" +
+                    gene.getTimeSlot().getDay() + "_" +
+                    gene.getTimeSlot().getPeriodNumber();
+
             classTimeMap.putIfAbsent(key, new HashSet<>());
             Set<Gene> existing = classTimeMap.get(key);
-            
+
             if (!existing.isEmpty()) {
                 conflicts++;
             }
@@ -107,9 +110,9 @@ public class FitnessCalculator {
 
             Teacher teacher = gene.getTeacher();
             String slotKey = gene.getTimeSlot().getDay() + "_" + gene.getTimeSlot().getPeriodNumber();
-            
-            if (teacher.getAvailableSlots() != null && 
-                !teacher.getAvailableSlots().contains(slotKey)) {
+
+            if (teacher.getAvailableSlots() != null &&
+                    !teacher.getAvailableSlots().contains(slotKey)) {
                 violations++;
             }
         }
@@ -135,7 +138,8 @@ public class FitnessCalculator {
         int violations = 0;
 
         for (Gene gene : genes) {
-            if (gene.getTeacher() == null) continue;
+            if (gene.getTeacher() == null)
+                continue;
 
             Long teacherId = gene.getTeacher().getId();
             String day = gene.getTimeSlot().getDay();
@@ -150,24 +154,46 @@ public class FitnessCalculator {
 
         // Check violations
         for (Gene gene : genes) {
-            if (gene.getTeacher() == null) continue;
+            if (gene.getTeacher() == null)
+                continue;
 
             Teacher teacher = gene.getTeacher();
             Long teacherId = teacher.getId();
             String day = gene.getTimeSlot().getDay();
             String dailyKey = teacherId + "_" + day;
 
-            if (teacher.getMaxHoursPerDay() > 0 && 
-                teacherDailyHours.getOrDefault(dailyKey, 0) > teacher.getMaxHoursPerDay()) {
+            if (teacher.getMaxHoursPerDay() > 0 &&
+                    teacherDailyHours.getOrDefault(dailyKey, 0) > teacher.getMaxHoursPerDay()) {
                 violations++;
             }
 
-            if (teacher.getMaxHoursPerWeek() > 0 && 
-                teacherWeeklyHours.getOrDefault(teacherId, 0) > teacher.getMaxHoursPerWeek()) {
+            if (teacher.getMaxHoursPerWeek() > 0 &&
+                    teacherWeeklyHours.getOrDefault(teacherId, 0) > teacher.getMaxHoursPerWeek()) {
                 violations++;
             }
         }
 
+        return violations;
+    }
+
+    private static int calculateRoomTypeViolations(List<Gene> genes) {
+        int violations = 0;
+        for (Gene gene : genes) {
+            String subjectType = (gene.getSubject() != null) ? gene.getSubject().getType() : null;
+            String roomType = (gene.getRoom() != null) ? gene.getRoom().getRoomType() : null;
+
+            if (subjectType != null && roomType != null) {
+                boolean isLabSubject = subjectType.trim().equalsIgnoreCase("LAB");
+                boolean isLabRoom = roomType.trim().equalsIgnoreCase("LAB")
+                        || roomType.trim().equalsIgnoreCase("Laboratory");
+
+                if (isLabSubject && !isLabRoom) {
+                    violations++;
+                } else if (!isLabSubject && isLabRoom) {
+                    violations++; // Penalize theory in lab to save space
+                }
+            }
+        }
         return violations;
     }
 }

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Users, BookOpen, MapPin, School, Clock } from 'lucide-react';
 import GlassCard from '../components/GlassCard';
 import { motion } from 'framer-motion';
@@ -16,13 +17,32 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
 );
 
 const Dashboard = () => {
-    // Mock data - replace with API calls later
+    const [counts, setCounts] = useState({
+        teachers: 0,
+        subjects: 0,
+        rooms: 0,
+        classes: 0,
+        timeSlots: 0
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await axios.get('/api/dashboard/stats');
+                setCounts(response.data);
+            } catch (error) {
+                console.error("Failed to fetch dashboard stats", error);
+            }
+        };
+        fetchStats();
+    }, []);
+
     const stats = [
-        { icon: Users, label: 'Total Teachers', value: '12', color: 'violet' },
-        { icon: BookOpen, label: 'Total Subjects', value: '8', color: 'pink' },
-        { icon: MapPin, label: 'Total Rooms', value: '5', color: 'cyan' },
-        { icon: School, label: 'Classes', value: '6', color: 'emerald' },
-        { icon: Clock, label: 'Time Slots', value: '40', color: 'amber' },
+        { icon: Users, label: 'Total Teachers', value: counts.teachers, color: 'blue' },
+        { icon: BookOpen, label: 'Total Subjects', value: counts.subjects, color: 'sky' },
+        { icon: MapPin, label: 'Total Rooms', value: counts.rooms, color: 'slate' },
+        { icon: School, label: 'Classes', value: counts.classes, color: 'indigo' },
+        { icon: Clock, label: 'Time Slots', value: counts.timeSlots, color: 'cyan' },
     ];
 
     return (
@@ -57,11 +77,11 @@ const Dashboard = () => {
                         <p className="text-gray-400">Select an action to get started:</p>
                         <div className="grid grid-cols-2 gap-4">
                             <button className="p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left group">
-                                <span className="block text-violet-400 font-medium group-hover:text-violet-300">Add Teacher</span>
+                                <span className="block text-blue-400 font-medium group-hover:text-blue-300">Add Teacher</span>
                                 <span className="text-xs text-gray-500">Register new faculty member</span>
                             </button>
                             <button className="p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left group">
-                                <span className="block text-pink-400 font-medium group-hover:text-pink-300">Generate Timetable</span>
+                                <span className="block text-sky-400 font-medium group-hover:text-sky-300">Generate Timetable</span>
                                 <span className="text-xs text-gray-500">Run optimization algorithm</span>
                             </button>
                         </div>

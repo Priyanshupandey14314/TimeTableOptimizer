@@ -17,7 +17,8 @@ const TimeSlots = () => {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentTimeSlot, setCurrentTimeSlot] = useState(null);
-    const [formData, setFormData] = useState({ day: '', periodNumber: '', startTime: '', endTime: '' });
+    const [formData, setFormData] = useState({ day: '', periodNumber: '', startTime: '', endTime: '', type: 'TEACHING', name: '' });
+    const [applyToAllDays, setApplyToAllDays] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -40,14 +41,18 @@ const TimeSlots = () => {
         if (slot) {
             setCurrentTimeSlot(slot);
             setFormData({
-                day: slot.day,
+                day: slot.day === 'Mon-Sat' ? '' : slot.day, // If group, no specific day in form initially
                 periodNumber: slot.periodNumber,
                 startTime: slot.startTime,
-                endTime: slot.endTime
+                endTime: slot.endTime,
+                type: slot.type || 'TEACHING',
+                name: slot.name || ''
             });
+            setApplyToAllDays(!!slot.isGroup); // Set checkbox if group
         } else {
             setCurrentTimeSlot(null);
-            setFormData({ day: '', periodNumber: '', startTime: '', endTime: '' });
+            setFormData({ day: 'Monday', periodNumber: '', startTime: '', endTime: '', type: 'TEACHING', name: '' });
+            setApplyToAllDays(false);
         }
         setIsModalOpen(true);
     };
@@ -55,20 +60,44 @@ const TimeSlots = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setCurrentTimeSlot(null);
-        setFormData({ day: '', periodNumber: '', startTime: '', endTime: '' });
+        setFormData({ day: '', periodNumber: '', startTime: '', endTime: '', type: 'TEACHING', name: '' });
+        setApplyToAllDays(false);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            if (currentTimeSlot) {
-                await axios.put(`/api/timeslots/${currentTimeSlot.id}`, formData);
-                addToast('Time slot updated successfully', 'success');
-            } else {
-                await axios.post('/api/timeslots', formData);
-                addToast('Time slot added successfully', 'success');
-            }
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const targets = applyToAllDays ? days : [formData.day];
+
+            const promises = targets.map(async (day) => {
+                const payload = { ...formData, day };
+
+                // Check if slot exists for this day/period to decide Update vs Create
+                const existing = timeSlots.find(ts =>
+                    ts.day === day &&
+                    ts.periodNumber == formData.periodNumber &&
+                    // If editing, exclude self from "existing" check implies we want to update self. 
+                    // But here we want to OVERWRITE any slot at this period on that day.
+                    (currentTimeSlot ? ts.id !== currentTimeSlot.id : true)
+                );
+
+                if (currentTimeSlot && !applyToAllDays) {
+                    // Normal single update
+                    return axios.put(`/api/timeslots/${currentTimeSlot.id}`, payload);
+                } else if (existing) {
+                    // Update existing found slot (even if we are in "Add" mode, if slot exists, update it)
+                    return axios.put(`/api/timeslots/${existing.id}`, payload);
+                } else {
+                    // Create new
+                    return axios.post('/api/timeslots', payload);
+                }
+            });
+
+            await Promise.all(promises);
+            addToast(`Time slot(s) ${currentTimeSlot ? 'updated' : 'added'} successfully`, 'success');
+
             fetchTimeSlots();
             handleCloseModal();
         } catch (error) {
@@ -80,10 +109,18 @@ const TimeSlots = () => {
     };
 
     const handleDelete = async (slot) => {
-        if (window.confirm(`Are you sure you want to delete this time slot?`)) {
+        const message = slot.isGroup
+            ? `Are you sure you want to delete this slot for ALL DAYS (Mon-Sat)?`
+            : `Are you sure you want to delete this time slot?`;
+
+        if (window.confirm(message)) {
             try {
-                await axios.delete(`/api/timeslots/${slot.id}`);
-                addToast('Time slot deleted successfully', 'success');
+                if (slot.isGroup) {
+                    await Promise.all(slot.ids.map(id => axios.delete(`/api/timeslots/${id}`)));
+                } else {
+                    await axios.delete(`/api/timeslots/${slot.id}`);
+                }
+                addToast('Time slot(s) deleted successfully', 'success');
                 fetchTimeSlots();
             } catch (error) {
                 console.error('Error deleting time slot:', error);
@@ -97,10 +134,60 @@ const TimeSlots = () => {
         { key: 'periodNumber', label: 'Period' },
         { key: 'startTime', label: 'Start Time' },
         { key: 'endTime', label: 'End Time' },
+        { key: 'type', label: 'Type', render: (row) => row.type === 'TEACHING' ? 'Teaching' : (row.name || row.type) },
     ];
 
-    const filteredTimeSlots = timeSlots.filter(slot =>
-        slot.day.toLowerCase().includes(searchTerm.toLowerCase())
+    // Helper to Group Time Slots
+    const getGroupedSlots = () => {
+        let groups = {};
+        let singles = [];
+
+        timeSlots.forEach(slot => {
+            // Create a key based on attributes that define a "group"
+            const key = `${slot.periodNumber}-${slot.startTime}-${slot.endTime}-${slot.type}-${slot.name}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(slot);
+        });
+
+        const result = [];
+        Object.values(groups).forEach(group => {
+            if (group.length === 6) { // Assuming 6 days Mon-Sat
+                // Check if it covers all days exactly
+                const days = group.map(g => g.day).sort();
+                const allDays = ['Friday', 'Monday', 'Saturday', 'Thursday', 'Tuesday', 'Wednesday']; // Sorted alphabetically
+
+                // Compare sorted arrays
+                const isAllDays = JSON.stringify(days) === JSON.stringify(allDays);
+
+                if (isAllDays) {
+                    const first = group[0];
+                    result.push({
+                        ...first,
+                        id: `group-${first.periodNumber}`, // Virtual ID
+                        day: 'Mon-Sat',
+                        isGroup: true,
+                        ids: group.map(g => g.id)
+                    });
+                } else {
+                    result.push(...group);
+                }
+            } else {
+                result.push(...group);
+            }
+        });
+
+        // Sort by Day then Period (approximately)
+        // Groups (Mon-Sat) can float to top or sort by Period
+        return result.sort((a, b) => {
+            if (a.day === 'Mon-Sat' && b.day !== 'Mon-Sat') return -1;
+            if (a.day !== 'Mon-Sat' && b.day === 'Mon-Sat') return 1;
+            return a.periodNumber - b.periodNumber;
+        });
+    };
+
+    const groupedTimeSlots = getGroupedSlots().filter(slot =>
+        slot.day.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (slot.day === 'Mon-Sat' && 'mon-sat'.includes(searchTerm.toLowerCase()))
     );
 
     return (
@@ -132,7 +219,7 @@ const TimeSlots = () => {
                 ) : (
                     <DataTable
                         columns={columns}
-                        data={filteredTimeSlots}
+                        data={groupedTimeSlots}
                         onEdit={handleOpenModal}
                         onDelete={handleDelete}
                     />
@@ -146,12 +233,15 @@ const TimeSlots = () => {
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Day</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                            {applyToAllDays ? 'Day (Auto: Mon-Sat)' : 'Day'}
+                        </label>
                         <select
-                            required
-                            value={formData.day}
+                            required={!applyToAllDays}
+                            disabled={applyToAllDays}
+                            value={applyToAllDays ? '' : formData.day}
                             onChange={(e) => setFormData({ ...formData, day: e.target.value })}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all"
+                            className={`w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all ${applyToAllDays ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <option value="" className="bg-gray-800">Select Day</option>
                             <option value="Monday" className="bg-gray-800">Monday</option>
@@ -162,16 +252,18 @@ const TimeSlots = () => {
                             <option value="Saturday" className="bg-gray-800">Saturday</option>
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Period Number</label>
-                        <GlassInput
-                            required
-                            type="number"
-                            value={formData.periodNumber}
-                            onChange={(e) => setFormData({ ...formData, periodNumber: e.target.value })}
-                            placeholder="1"
-                        />
-                    </div>
+                    {formData.type === 'TEACHING' && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Period Number</label>
+                            <GlassInput
+                                required
+                                type="number"
+                                value={formData.periodNumber}
+                                onChange={(e) => setFormData({ ...formData, periodNumber: e.target.value })}
+                                placeholder="1"
+                            />
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1">Start Time</label>
@@ -192,6 +284,43 @@ const TimeSlots = () => {
                             />
                         </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Type</label>
+                            <select
+                                value={formData.type}
+                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all"
+                            >
+                                <option value="TEACHING" className="bg-gray-800">Teaching Class</option>
+                                <option value="LUNCH" className="bg-gray-800">Lunch Break</option>
+                                <option value="BREAK" className="bg-gray-800">Short Break</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Name (Optional)</label>
+                            <GlassInput
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="e.g. Lunch"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-4">
+                        <input
+                            type="checkbox"
+                            id="applyAll"
+                            checked={applyToAllDays}
+                            onChange={(e) => setApplyToAllDays(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                        />
+                        <label htmlFor="applyAll" className="text-sm text-gray-300">
+                            Apply to all working days (Mon-Sat)
+                        </label>
+                    </div>
+
                     <div className="flex justify-end gap-3 mt-6">
                         <button
                             type="button"
@@ -206,7 +335,7 @@ const TimeSlots = () => {
                     </div>
                 </form>
             </GlassModal>
-        </div>
+        </div >
     );
 };
 

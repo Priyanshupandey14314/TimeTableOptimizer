@@ -18,31 +18,33 @@ public class RoomController {
     }
 
     @PostMapping
-    public Room create(@RequestBody Room room) {
-        return roomService.addRoom(room);
+    public org.springframework.http.ResponseEntity<Room> create(@RequestBody Room room) {
+        return org.springframework.http.ResponseEntity.ok(roomService.addRoom(room));
     }
 
     @GetMapping
-    public List<Room> getAll() {
-        long start = System.currentTimeMillis();
-        List<Room> rooms = roomService.getAllRooms();
-        long end = System.currentTimeMillis();
-        System.out.println("Fetching all rooms took: " + (end - start) + "ms");
-        return rooms;
+    public org.springframework.http.ResponseEntity<List<Room>> getAll() {
+        return org.springframework.http.ResponseEntity.ok(roomService.getAllRooms());
     }
 
     @GetMapping("/{id}")
-    public Room get(@PathVariable Long id) {
-        return roomService.getRoomById(id);
+    public org.springframework.http.ResponseEntity<Room> get(@PathVariable Long id) {
+        Room room = roomService.getRoomById(id);
+        if (room == null) {
+            throw new com.timemaster.timetableoptimizer.exception.ResourceNotFoundException(
+                    "Room not found with id: " + id);
+        }
+        return org.springframework.http.ResponseEntity.ok(room);
     }
 
     @PutMapping("/{id}")
-    public Room update(@PathVariable Long id, @RequestBody Room room) {
-        return roomService.updateRoom(id, room);
+    public org.springframework.http.ResponseEntity<Room> update(@PathVariable Long id, @RequestBody Room room) {
+        return org.springframework.http.ResponseEntity.ok(roomService.updateRoom(id, room));
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public org.springframework.http.ResponseEntity<Void> delete(@PathVariable Long id) {
         roomService.deleteRoom(id);
+        return org.springframework.http.ResponseEntity.noContent().build();
     }
 }

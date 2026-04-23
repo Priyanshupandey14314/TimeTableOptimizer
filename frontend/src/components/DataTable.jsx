@@ -29,11 +29,14 @@ const DataTable = ({ columns, data, onEdit, onDelete, actions = true }) => {
                     ) : (
                         data.map((row, rowIndex) => (
                             <tr key={rowIndex} className="hover:bg-white/5 transition-colors">
-                                {columns.map((col) => (
-                                    <td key={`${rowIndex}-${col.key}`} className="px-6 py-4 whitespace-nowrap">
-                                        {row[col.key]}
-                                    </td>
-                                ))}
+                                {columns.map((col) => {
+                                    const value = col.key.split('.').reduce((obj, key) => obj?.[key], row);
+                                    return (
+                                        <td key={`${rowIndex}-${col.key}`} className="px-6 py-4 whitespace-nowrap">
+                                            {typeof value === 'object' ? JSON.stringify(value) : value}
+                                        </td>
+                                    );
+                                })}
                                 {actions && (
                                     <td className="px-6 py-4 text-right whitespace-nowrap">
                                         <div className="flex justify-end space-x-2">

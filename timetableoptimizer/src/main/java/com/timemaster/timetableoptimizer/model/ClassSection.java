@@ -12,8 +12,14 @@ public class ClassSection {
 
     private String name; // Example: "10A"
 
-    @Column(nullable = true)
-    private String department; // Example: "CSE"
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    @com.fasterxml.jackson.annotation.JsonBackReference(value = "dept-class")
+    private Department department; // Relationship to Department entity
+
+    @OneToMany(mappedBy = "classSection", cascade = CascadeType.ALL)
+    @com.fasterxml.jackson.annotation.JsonManagedReference(value = "class-subject")
+    private java.util.List<Subject> subjects;
 
     private int studentCount;
 
@@ -33,11 +39,11 @@ public class ClassSection {
         this.name = name;
     }
 
-    public String getDepartment() {
+    public Department getDepartment() {
         return department;
     }
 
-    public void setDepartment(String department) {
+    public void setDepartment(Department department) {
         this.department = department;
     }
 
@@ -55,6 +61,14 @@ public class ClassSection {
 
     public void setStudentCount(int studentCount) {
         this.studentCount = studentCount;
+    }
+
+    public java.util.List<Subject> getSubjects() {
+        return subjects;
+    }
+
+    public void setSubjects(java.util.List<Subject> subjects) {
+        this.subjects = subjects;
     }
 
     @ManyToOne

@@ -18,33 +18,38 @@ public class SubjectController {
     }
 
     @PostMapping
-    public Subject create(@RequestBody Subject subject) {
-        System.out.println("Received Subject: " + subject);
-        if (subject.getTeacher() != null) {
-            System.out.println("Teacher ID: " + subject.getTeacher().getId());
-        } else {
-            System.out.println("Teacher is null");
+    public org.springframework.http.ResponseEntity<Subject> create(@RequestBody Subject subject) {
+        if (subject.getWeeklyHours() <= 0) {
+            // throw new IllegalArgumentException("Weekly hours must be positive");
+            // Relaxed for now or handle as warning
         }
-        return subjectService.addSubject(subject);
+        return org.springframework.http.ResponseEntity.ok(subjectService.addSubject(subject));
     }
 
     @GetMapping
-    public List<Subject> getAll() {
-        return subjectService.getAllSubjects();
+    public org.springframework.http.ResponseEntity<List<Subject>> getAll() {
+        return org.springframework.http.ResponseEntity.ok(subjectService.getAllSubjects());
     }
 
     @GetMapping("/{id}")
-    public Subject get(@PathVariable Long id) {
-        return subjectService.getSubjectById(id);
+    public org.springframework.http.ResponseEntity<Subject> get(@PathVariable Long id) {
+        Subject s = subjectService.getSubjectById(id);
+        if (s == null) {
+            throw new com.timemaster.timetableoptimizer.exception.ResourceNotFoundException(
+                    "Subject not found with id: " + id);
+        }
+        return org.springframework.http.ResponseEntity.ok(s);
     }
 
     @PutMapping("/{id}")
-    public Subject update(@PathVariable Long id, @RequestBody Subject subject) {
-        return subjectService.updateSubject(id, subject);
+    public org.springframework.http.ResponseEntity<Subject> update(@PathVariable Long id,
+            @RequestBody Subject subject) {
+        return org.springframework.http.ResponseEntity.ok(subjectService.updateSubject(id, subject));
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public org.springframework.http.ResponseEntity<Void> delete(@PathVariable Long id) {
         subjectService.deleteSubject(id);
+        return org.springframework.http.ResponseEntity.noContent().build();
     }
 }

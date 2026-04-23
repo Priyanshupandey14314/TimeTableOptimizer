@@ -4,7 +4,6 @@ import com.timemaster.timetableoptimizer.dto.TimeTableRequest;
 import com.timemaster.timetableoptimizer.model.*;
 import com.timemaster.timetableoptimizer.repository.*;
 import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,17 +17,20 @@ public class GAEngine {
     private final SubjectRepository subjectRepository;
     private final RoomRepository roomRepository;
     private final TimeSlotRepository timeSlotRepository;
+    private final TimetableEntryRepository timetableEntryRepository;
 
     public GAEngine(ClassSectionRepository classSectionRepository,
             TeacherRepository teacherRepository,
             SubjectRepository subjectRepository,
             RoomRepository roomRepository,
-            TimeSlotRepository timeSlotRepository) {
+            TimeSlotRepository timeSlotRepository,
+            TimetableEntryRepository timetableEntryRepository) {
         this.classSectionRepository = classSectionRepository;
         this.teacherRepository = teacherRepository;
         this.subjectRepository = subjectRepository;
         this.roomRepository = roomRepository;
         this.timeSlotRepository = timeSlotRepository;
+        this.timetableEntryRepository = timetableEntryRepository;
     }
 
     public Map<String, Object> generateTimetable(TimeTableRequest request) {
@@ -36,7 +38,7 @@ public class GAEngine {
         List<ClassSection> classSections = new ArrayList<>();
 
         if (request.getDepartment() != null && !request.getDepartment().isEmpty()) {
-            classSections = classSectionRepository.findByDepartment(request.getDepartment());
+            classSections = classSectionRepository.findByDepartment_Name(request.getDepartment());
             if (classSections.isEmpty()) {
                 throw new RuntimeException("No classes found for department: " + request.getDepartment());
             }
@@ -64,8 +66,29 @@ public class GAEngine {
         // Run GA to generate timetable
         Chromosome bestSolution = ga.evolve();
 
+        // Save solution to database
+        saveTimetable(bestSolution, classSections);
+
         // Convert chromosome to response format
         return convertToResponse(bestSolution);
+    }
+
+    private void saveTimetable(Chromosome chromosome, List<ClassSection> involvedClasses) {
+        // Optimistic approach: Save directly defined logic.
+        List<TimetableEntry> entriesToSave = new ArrayList<>();
+        for (Gene gene : chromosome.getGenes()) {
+            if (gene.getTeacher() == null || gene.getSubject() == null)
+                continue;
+
+            TimetableEntry entry = new TimetableEntry();
+            entry.setClassSection(gene.getClassSection());
+            entry.setSubject(gene.getSubject());
+            entry.setTeacher(gene.getTeacher());
+            entry.setRoom(gene.getRoom());
+            entry.setTimeSlot(gene.getTimeSlot());
+            entriesToSave.add(entry);
+        }
+        timetableEntryRepository.saveAll(entriesToSave);
     }
 
     private Map<String, Object> convertToResponse(Chromosome chromosome) {

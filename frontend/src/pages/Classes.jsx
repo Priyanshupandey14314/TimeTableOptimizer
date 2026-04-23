@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Plus, Search } from 'lucide-react';
 import GlassCard from '../components/GlassCard';
@@ -11,6 +11,7 @@ import { useToast } from '../context/ToastContext';
 const Classes = () => {
     const [classes, setClasses] = useState([]);
     const [rooms, setRooms] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const { addToast } = useToast();
@@ -18,28 +19,30 @@ const Classes = () => {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentClass, setCurrentClass] = useState(null);
-    const [formData, setFormData] = useState({ name: '', studentCount: '', roomId: '' });
+    const [formData, setFormData] = useState({ name: '', studentCount: '', roomId: '', department: null });
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
-            const [classesRes, roomsRes] = await Promise.all([
+            const [classesRes, roomsRes, deptsRes] = await Promise.all([
                 axios.get('/api/classsections'),
-                axios.get('/api/rooms')
+                axios.get('/api/rooms'),
+                axios.get('/api/departments')
             ]);
             setClasses(classesRes.data);
             setRooms(roomsRes.data);
+            setDepartments(deptsRes.data);
         } catch (error) {
             console.error('Error fetching data:', error);
             addToast('Failed to fetch data', 'error');
         } finally {
             setLoading(false);
         }
-    };
+    }, [addToast]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleOpenModal = (cls = null) => {
         if (cls) {
@@ -47,12 +50,12 @@ const Classes = () => {
             setFormData({
                 name: cls.name,
                 studentCount: cls.studentCount,
-                department: cls.department || '',
+                department: cls.department,
                 roomId: cls.room ? cls.room.id : ''
             });
         } else {
             setCurrentClass(null);
-            setFormData({ name: '', studentCount: '', roomId: '', department: '' });
+            setFormData({ name: '', studentCount: '', roomId: '', department: null });
         }
         setIsModalOpen(true);
     };
@@ -60,7 +63,7 @@ const Classes = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setCurrentClass(null);
-        setFormData({ name: '', studentCount: '', roomId: '', department: '' });
+        setFormData({ name: '', studentCount: '', roomId: '', department: null });
     };
 
     const handleSubmit = async (e) => {
@@ -107,7 +110,7 @@ const Classes = () => {
 
     const columns = [
         { key: 'name', label: 'Class Name' },
-        { key: 'department', label: 'Department' },
+        { key: 'department.name', label: 'Department' },
         { key: 'studentCount', label: 'Student Count' },
         {
             key: 'room',
@@ -173,12 +176,22 @@ const Classes = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Department</label>
-                        <GlassInput
+                        <select
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                            value={formData.department?.id || ''}
+                            onChange={(e) => {
+                                const dept = departments.find(d => d.id === parseInt(e.target.value));
+                                setFormData({ ...formData, department: dept });
+                            }}
                             required
-                            value={formData.department}
-                            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                            placeholder="CSE"
-                        />
+                        >
+                            <option value="" className="bg-gray-800 text-gray-400">Select Department</option>
+                            {departments.map(dept => (
+                                <option key={dept.id} value={dept.id} className="bg-gray-800 text-white">
+                                    {dept.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Student Count</label>

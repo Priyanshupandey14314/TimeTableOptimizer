@@ -9,6 +9,7 @@ import NeonTriangleLoader from '../components/NeonTriangleLoader';
 import { useToast } from '../context/ToastContext';
 
 import ConsolidatedTimetable from '../components/ConsolidatedTimetable';
+import { exportTimetableToPDF } from '../utils/pdfUtils';
 
 const GenerateTimetable = () => {
     const [generating, setGenerating] = useState(false);
@@ -20,6 +21,8 @@ const GenerateTimetable = () => {
     const [classes, setClasses] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [subjects, setSubjects] = useState([]);
+    const [timeSlots, setTimeSlots] = useState([]); // New state
+    const [departments, setDepartments] = useState([]); // New state
 
     // Selection State
     const [generationMode, setGenerationMode] = useState('single'); // 'single' or 'department'
@@ -34,14 +37,18 @@ const GenerateTimetable = () => {
 
     const fetchData = async () => {
         try {
-            const [classesRes, teachersRes, subjectsRes] = await Promise.all([
+            const [classesRes, teachersRes, subjectsRes, deptsRes, timeSlotsRes] = await Promise.all([
                 axios.get('/api/classsections'),
                 axios.get('/api/teachers'),
-                axios.get('/api/subjects')
+                axios.get('/api/subjects'),
+                axios.get('/api/departments'),
+                axios.get('/api/timeslots')
             ]);
             setClasses(classesRes.data);
             setTeachers(teachersRes.data);
             setSubjects(subjectsRes.data);
+            setDepartments(deptsRes.data);
+            setTimeSlots(timeSlotsRes.data);
         } catch (err) {
             console.error('Error fetching data:', err);
             setError('Failed to load configuration data.');
@@ -49,6 +56,7 @@ const GenerateTimetable = () => {
         }
     };
 
+    // ... toggle logic remains same ...
     const toggleTeacher = (id) => {
         setSelectedTeachers(prev =>
             prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]
@@ -64,8 +72,7 @@ const GenerateTimetable = () => {
     const selectAllTeachers = () => setSelectedTeachers(teachers.map(t => t.id));
     const selectAllSubjects = () => setSelectedSubjects(subjects.map(s => s.id));
 
-    // Get unique departments from classes
-    const departments = [...new Set(classes.map(c => c.department).filter(Boolean))].sort();
+    // Removed derived departments logic
 
     const handleGenerate = async () => {
         if (generationMode === 'single' && !selectedClass) {
@@ -86,7 +93,6 @@ const GenerateTimetable = () => {
         setGenerating(true);
         setError('');
         setTimetable(null);
-
         try {
             const request = {
                 classSectionId: generationMode === 'single' ? parseInt(selectedClass) : null,
@@ -105,6 +111,21 @@ const GenerateTimetable = () => {
         } finally {
             setGenerating(false);
         }
+    };
+
+    const handleExport = () => {
+        if (!timetable) return;
+
+        let title = 'Timetable';
+        if (generationMode === 'single') {
+            const cls = classes.find(c => c.id == selectedClass);
+            title = cls ? `${cls.name}_Timetable` : 'Class_Timetable';
+        } else {
+            title = `${selectedDepartment}_Timetable`;
+        }
+
+        exportTimetableToPDF(timetable, title, timeSlots);
+        addToast('Export started', 'success');
     };
 
     const columns = [
@@ -171,7 +192,7 @@ const GenerateTimetable = () => {
                                     >
                                         <option value="" className="bg-gray-800">Select Department</option>
                                         {departments.map(dept => (
-                                            <option key={dept} value={dept} className="bg-gray-800">{dept}</option>
+                                            <option key={dept.id} value={dept.name} className="bg-gray-800">{dept.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -216,12 +237,12 @@ const GenerateTimetable = () => {
                             <GlassButton
                                 onClick={handleGenerate}
                                 disabled={generating}
-                                className="w-full flex justify-center items-center gap-2 mt-4"
+                                className="w-full flex justify-center items-center gap-2 mt-4 bg-dark"
                             >
                                 {generating ? (
                                     <>
                                         <div className="flex flex-col items-center justify-center py-2">
-                                            <NeonTriangleLoader />
+                                            {/* <NeonTriangleLoader /> */}
                                             <span className="mt-2 text-sm text-gray-300">Optimizing Schedule...</span>
                                         </div>
                                     </>
@@ -247,7 +268,10 @@ const GenerateTimetable = () => {
                         <GlassCard>
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-semibold text-white">Generated Schedule</h3>
-                                <button className="text-gray-400 hover:text-white flex items-center gap-2 text-sm">
+                                <button
+                                    onClick={handleExport}
+                                    className="text-gray-400 hover:text-white flex items-center gap-2 text-sm"
+                                >
                                     <Download size={16} />
                                     Export PDF
                                 </button>
@@ -257,6 +281,7 @@ const GenerateTimetable = () => {
                                 <ConsolidatedTimetable
                                     timetable={timetable}
                                     departments={[selectedDepartment]}
+                                    timeSlots={timeSlots}
                                 />
                             ) : (
                                 <DataTable

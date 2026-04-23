@@ -1,15 +1,16 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, MapPin, School, Clock, Calendar, Menu } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, MapPin, School, Clock, Calendar, Menu, GraduationCap, ClipboardList, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 const SidebarItem = ({ icon: Icon, label, to, active }) => (
     <Link to={to}>
         <motion.div
             whileHover={{ x: 5 }}
             className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${active
-                    ? 'bg-violet-600/20 text-violet-300 border-l-4 border-violet-500'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-600/20 text-blue-300 border-l-4 border-blue-500'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
         >
             <Icon size={20} />
@@ -20,16 +21,26 @@ const SidebarItem = ({ icon: Icon, label, to, active }) => (
 
 const Layout = ({ children }) => {
     const location = useLocation();
+    const { user, logout } = useAuth();
 
-    const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
-        { icon: Users, label: 'Teachers', to: '/teachers' },
-        { icon: BookOpen, label: 'Subjects', to: '/subjects' },
-        { icon: MapPin, label: 'Rooms', to: '/rooms' },
-        { icon: School, label: 'Classes', to: '/classes' },
-        { icon: Clock, label: 'Time Slots', to: '/timeslots' },
-        { icon: Calendar, label: 'Generate', to: '/generate' },
+    const allNavItems = [
+        { icon: LayoutDashboard, label: 'Dashboard', to: '/', roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
+        { icon: Users, label: 'Teachers', to: '/teachers', roles: ['ADMIN'] },
+        { icon: BookOpen, label: 'Subjects', to: '/subjects', roles: ['ADMIN'] },
+        { icon: MapPin, label: 'Rooms', to: '/rooms', roles: ['ADMIN'] },
+        { icon: School, label: 'Classes', to: '/classes', roles: ['ADMIN'] },
+        { icon: Clock, label: 'Time Slots', to: '/timeslots', roles: ['ADMIN'] },
+        { icon: Calendar, label: 'Generate', to: '/generate', roles: ['ADMIN'] },
+        { icon: GraduationCap, label: 'Student View', to: '/student-timetable', roles: ['ADMIN', 'STUDENT'] },
+        { icon: ClipboardList, label: 'Teacher View', to: '/teacher-timetable', roles: ['ADMIN', 'TEACHER'] },
     ];
+
+    const navItems = allNavItems.filter(item => {
+        if (!user || !user.roles) return false;
+        // Check if user has at least one of the required roles
+        // Backend typically returns "ROLE_ADMIN", so we normalize or check
+        return item.roles.some(role => user.roles.includes(role) || user.roles.includes(`ROLE_${role}`));
+    });
 
     return (
         <div className="flex min-h-screen">
@@ -51,6 +62,16 @@ const Layout = ({ children }) => {
                         />
                     ))}
                 </nav>
+
+                <div className="absolute bottom-0 w-full p-4 border-t border-white/10">
+                    <button
+                        onClick={logout}
+                        className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-white/5 hover:text-red-300 transition-all font-medium"
+                    >
+                        <LogOut size={20} />
+                        <span>Sign Out</span>
+                    </button>
+                </div>
             </aside>
 
             {/* Main Content */}

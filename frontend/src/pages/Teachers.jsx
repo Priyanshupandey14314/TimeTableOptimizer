@@ -10,6 +10,7 @@ import { useToast } from '../context/ToastContext';
 
 const Teachers = () => {
     const [teachers, setTeachers] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const { addToast } = useToast();
@@ -20,13 +21,25 @@ const Teachers = () => {
     const [formData, setFormData] = useState({
         name: '',
         maxHoursPerDay: '',
-        maxHoursPerWeek: ''
+        maxHoursPerWeek: '',
+        department: null
     });
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         fetchTeachers();
+        fetchDepartments();
     }, []);
+
+    const fetchDepartments = async () => {
+        try {
+            const response = await axios.get('/api/departments');
+            setDepartments(response.data);
+        } catch (error) {
+            console.warn('Error fetching departments:', error);
+            // Optionally toast, but don't block
+        }
+    };
 
     const fetchTeachers = async () => {
         try {
@@ -46,11 +59,12 @@ const Teachers = () => {
             setFormData({
                 name: teacher.name,
                 maxHoursPerDay: teacher.maxHoursPerDay,
-                maxHoursPerWeek: teacher.maxHoursPerWeek
+                maxHoursPerWeek: teacher.maxHoursPerWeek,
+                department: teacher.department
             });
         } else {
             setCurrentTeacher(null);
-            setFormData({ name: '', maxHoursPerDay: '', maxHoursPerWeek: '' });
+            setFormData({ name: '', maxHoursPerDay: '', maxHoursPerWeek: '', department: null });
         }
         setIsModalOpen(true);
     };
@@ -58,7 +72,7 @@ const Teachers = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setCurrentTeacher(null);
-        setFormData({ name: '', maxHoursPerDay: '', maxHoursPerWeek: '' });
+        setFormData({ name: '', maxHoursPerDay: '', maxHoursPerWeek: '', department: null });
     };
 
     const handleSubmit = async (e) => {
@@ -97,6 +111,7 @@ const Teachers = () => {
 
     const columns = [
         { key: 'name', label: 'Name' },
+        { key: 'department.name', label: 'Department' },
         { key: 'maxHoursPerDay', label: 'Max Hours/Day' },
         { key: 'maxHoursPerWeek', label: 'Max Hours/Week' },
     ];
@@ -176,6 +191,25 @@ const Teachers = () => {
                             placeholder="20"
                         />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Department</label>
+                        <select
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                            value={formData.department?.id || ''}
+                            onChange={(e) => {
+                                const dept = departments.find(d => d.id === parseInt(e.target.value));
+                                setFormData({ ...formData, department: dept });
+                            }}
+                            required
+                        >
+                            <option value="" className="bg-gray-800 text-gray-400">Select Department</option>
+                            {departments.map(dept => (
+                                <option key={dept.id} value={dept.id} className="bg-gray-800 text-white">
+                                    {dept.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     <div className="flex justify-end gap-3 mt-6">
                         <button
                             type="button"
@@ -190,7 +224,7 @@ const Teachers = () => {
                     </div>
                 </form>
             </GlassModal>
-        </div>
+        </div >
     );
 };
 

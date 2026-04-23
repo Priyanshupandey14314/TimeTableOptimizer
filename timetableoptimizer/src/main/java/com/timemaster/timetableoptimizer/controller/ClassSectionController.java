@@ -1,7 +1,9 @@
 package com.timemaster.timetableoptimizer.controller;
 
 import com.timemaster.timetableoptimizer.model.ClassSection;
+import com.timemaster.timetableoptimizer.exception.ResourceNotFoundException;
 import com.timemaster.timetableoptimizer.services.ClassSectionService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,28 +20,38 @@ public class ClassSectionController {
     }
 
     @PostMapping
-    public ClassSection create(@RequestBody ClassSection c) {
-        return classSectionService.addClassSection(c);
+    public ResponseEntity<ClassSection> add(@RequestBody ClassSection classSection) {
+        if (classSection.getStudentCount() < 0) {
+            throw new IllegalArgumentException("Student count cannot be negative");
+        }
+        return ResponseEntity.ok(classSectionService.addClassSection(classSection));
     }
 
     @GetMapping
-    public List<ClassSection> getAll() {
-        return classSectionService.getAllClassSections();
+    public ResponseEntity<List<ClassSection>> getAll() {
+        return ResponseEntity.ok(classSectionService.getAllClassSections());
     }
 
     @GetMapping("/{id}")
-    public ClassSection get(@PathVariable Long id) {
-        return classSectionService.getClassSectionById(id);
+    public ResponseEntity<ClassSection> get(@PathVariable Long id) {
+        ClassSection cs = classSectionService.getClassSectionById(id);
+        if (cs == null) {
+            throw new ResourceNotFoundException("ClassSection not found with id: " + id);
+        }
+        return ResponseEntity.ok(cs);
     }
 
     @PutMapping("/{id}")
-    public ClassSection update(@PathVariable Long id, @RequestBody ClassSection c) {
-        return classSectionService.updateClassSection(id, c);
+    public ResponseEntity<ClassSection> update(@PathVariable Long id, @RequestBody ClassSection classSection) {
+        if (classSection.getStudentCount() < 0) {
+            throw new IllegalArgumentException("Student count cannot be negative");
+        }
+        return ResponseEntity.ok(classSectionService.updateClassSection(id, classSection));
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         classSectionService.deleteClassSection(id);
+        return ResponseEntity.noContent().build();
     }
 }
-

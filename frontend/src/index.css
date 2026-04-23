@@ -4,9 +4,9 @@
   --color-glass: rgba(255, 255, 255, 0.05);
   --color-glass-hover: rgba(255, 255, 255, 0.1);
   --color-glass-border: rgba(255, 255, 255, 0.1);
-  --color-primary: #8b5cf6;
-  --color-secondary: #ec4899;
-  --color-accent: #06b6d4;
+  --color-primary: #2563eb;
+  --color-secondary: #64748b;
+  --color-accent: #0ea5e9;
   --color-background: #0f172a;
 }
 
@@ -29,11 +29,11 @@ body {
 }
 
 .glass-button {
-  @apply bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:shadow-violet-500/20 transition-all duration-300 transform hover:-translate-y-0.5;
+  @apply bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:shadow-blue-500/20 transition-all duration-300 transform hover:-translate-y-0.5;
 }
 
 .text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-pink-400;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-sky-400;
 }
 
 /* Neon Triangle Animation */
@@ -41,7 +41,7 @@ body {
   position: relative;
   width: 100px;
   height: 100px;
-  filter: drop-shadow(0 0 10px #a855f7) drop-shadow(0 0 20px #a855f7);
+  filter: drop-shadow(0 0 10px #2563eb) drop-shadow(0 0 20px #2563eb);
   animation: rotate 2s linear infinite;
 }
 
@@ -52,7 +52,7 @@ body {
   width: 100%;
   height: 100%;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  background: linear-gradient(45deg, #a855f7, #ec4899);
+  background: linear-gradient(45deg, #2563eb, #0ea5e9);
   animation: pulse 1s ease-in-out infinite alternate;
 }
 

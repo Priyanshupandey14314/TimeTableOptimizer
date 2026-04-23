@@ -17,56 +17,55 @@ public class Teacher {
     private List<String> availableSlots; // Example: "MON_1", "TUE_3"
 
     @OneToMany(mappedBy = "teacher")
-//    @com.fasterxml.jackson.annotation.JsonIgnore
+    // @com.fasterxml.jackson.annotation.JsonIgnore
     @JsonManagedReference
     private List<Subject> subjects;
-    // Getters and Setters
 
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    @com.fasterxml.jackson.annotation.JsonBackReference(value = "dept-teacher")
+    private Department department;
     public Long getId() {
         return id;
     }
-
     public void setId(Long id) {
         this.id = id;
     }
-
     public String getName() {
         return name;
     }
-
     public void setName(String name) {
         this.name = name;
     }
-
     public int getMaxHoursPerWeek() {
         return maxHoursPerWeek;
     }
-
     public void setMaxHoursPerWeek(int maxHoursPerWeek) {
         this.maxHoursPerWeek = maxHoursPerWeek;
     }
-
     public int getMaxHoursPerDay() {
         return maxHoursPerDay;
     }
-
     public void setMaxHoursPerDay(int maxHoursPerDay) {
         this.maxHoursPerDay = maxHoursPerDay;
     }
-
     public List<String> getAvailableSlots() {
         return availableSlots;
     }
-
     public void setAvailableSlots(List<String> availableSlots) {
         this.availableSlots = availableSlots;
     }
-
     public List<Subject> getSubjects() {
         return subjects;
     }
-
     public void setSubjects(List<Subject> subjects) {
         this.subjects = subjects;
+    }
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 }

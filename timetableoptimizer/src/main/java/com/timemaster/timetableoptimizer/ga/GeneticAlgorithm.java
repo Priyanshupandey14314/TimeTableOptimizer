@@ -5,12 +5,12 @@ import java.util.*;
 
 public class GeneticAlgorithm {
 
-    private static final int POPULATION_SIZE = 100;
+    private static final int POPULATION_SIZE = 200;
     private static final double MUTATION_RATE = 0.1;
     private static final double CROSSOVER_RATE = 0.8;
-    private static final int MAX_GENERATIONS = 100;
+    private static final int MAX_GENERATIONS = 500;
     private static final int TOURNAMENT_SIZE = 5;
-    private static final double ELITISM_RATE = 0.1; // Keep top 10% of population
+    private static final double ELITISM_RATE = 0.1;
 
     private List<ClassSection> classSections;
     private List<Subject> subjects;
@@ -20,22 +20,27 @@ public class GeneticAlgorithm {
     private Random random;
 
     public GeneticAlgorithm(List<ClassSection> classSections,
-                           List<Subject> subjects,
-                           List<Teacher> teachers,
-                           List<Room> rooms,
-                           List<TimeSlot> timeSlots) {
+            List<Subject> subjects,
+            List<Teacher> teachers,
+            List<Room> rooms,
+            List<TimeSlot> timeSlots) {
         this.classSections = classSections;
         this.subjects = subjects;
         this.teachers = teachers;
         this.rooms = rooms;
-        this.timeSlots = timeSlots;
+        this.teachers = teachers;
+        this.rooms = rooms;
+        // Filter out breaks/lunch from schedulable slots
+        this.timeSlots = timeSlots.stream()
+                .filter(ts -> "TEACHING".equalsIgnoreCase(ts.getType()))
+                .toList();
         this.random = new Random();
     }
 
     public Chromosome evolve() {
         // Initialize population
-        Population population = new Population(POPULATION_SIZE, classSections, 
-                                               subjects, teachers, rooms, timeSlots);
+        Population population = new Population(POPULATION_SIZE, classSections,
+                subjects, teachers, rooms, timeSlots);
 
         Chromosome bestChromosome = population.getFittest();
         double bestFitness = bestChromosome.getFitness();

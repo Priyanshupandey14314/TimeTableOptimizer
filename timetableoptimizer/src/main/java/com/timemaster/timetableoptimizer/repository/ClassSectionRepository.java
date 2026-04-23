@@ -5,5 +5,5 @@ import com.timemaster.timetableoptimizer.model.ClassSection;
 import java.util.List;
 
 public interface ClassSectionRepository extends JpaRepository<ClassSection, Long> {
-    List<ClassSection> findByDepartment(String department);
+    List<ClassSection> findByDepartment_Name(String departmentName);
 }

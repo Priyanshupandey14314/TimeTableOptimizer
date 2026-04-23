@@ -1,6 +1,5 @@
 package com.timemaster.timetableoptimizer.model;
 
-
 import jakarta.persistence.*;
 
 @Entity
@@ -10,10 +9,15 @@ public class TimeSlot {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String day;          // MON, TUE, WED...
-    private String startTime;    // "09:00"
-    private String endTime;      // "10:00"
-    private int periodNumber;    // 1, 2, 3...
+    private String day; // MON, TUE, WED...
+    private String startTime; // "09:00"
+    private String endTime; // "10:00"
+    private int periodNumber; // 1, 2, 3...
+
+    @Column(columnDefinition = "VARCHAR(255) DEFAULT 'TEACHING'")
+    private String type = "TEACHING"; // TEACHING, BREAK, LUNCH
+
+    private String name; // Optional name for the break (e.g. "Lunch")
 
     // Getters and Setters
 
@@ -56,5 +60,20 @@ public class TimeSlot {
     public void setPeriodNumber(int periodNumber) {
         this.periodNumber = periodNumber;
     }
-}
 
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}

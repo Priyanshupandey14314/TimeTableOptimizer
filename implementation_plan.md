@@ -1,37 +1,27 @@
-# Implementation Plan - Final Polish & "100% Working" Verification
+# Repair PDF Download Functionality
 
-## Goal Description
-We are entering the final phase to ensure the Time Table Optimizer is "100% working". This involves polishing the UI consistency (Neon Loader) and, critically, verifying the end-to-end generation flow with a rigorous integration test.
+The "Download PDF" button is unresponsive. Investigation reveals a high probability of errors in `pdfUtils.js` due to incorrect data access handling (nested `timeSlot` properties) during sorting and potentially incorrect `jspdf` import usage in the Vite environment.
 
 ## User Review Required
+
 > [!NOTE]
-> I will be adding a new `IntegrationTest` to verify the full generation pipeline without needing manual UI clicking. This ensures the Core Algorithm connects correctly to the API.
+> No breaking changes. This is a bug fix for the PDF export utility.
 
 ## Proposed Changes
 
-### Frontend Polish
-#### [MODIFY] [GenerateTimetable.jsx](file:///f:/SpringBootProjects/TTO/frontend/src/pages/GenerateTimetable.jsx)
-- **Change**: Replace the default spinner with the `NeonTriangleLoader` component.
-- **Reason**: To maintain consistent "Neon" aesthetics across the application.
+### Frontend
 
-### Backend Verification
-#### [NEW] [TimetableIntegrationTest.java](file:///f:/SpringBootProjects/TTO/timetableoptimizer/src/test/java/com/timemaster/timetableoptimizer/integration/TimetableIntegrationTest.java)
-- **New Test**: A Spring Boot Integration Test that:
-    1.  Creates Reference Data (Teacher, Room, Subject, Class).
-    2.  Calls the `POST /api/timetable/generate` endpoint.
-    3.  Verifies the response contains a valid timetable (fitness > 0, non-empty list).
+#### [MODIFY] [pdfUtils.js](file:///f:/SpringBootProjects/TTO/frontend/src/utils/pdfUtils.js)
+- Update the sorting logic to correctly access `day` and `periodNumber` from either the root object or the nested `timeSlot` object, similar to how it is handled in the table data construction.
+- Change `import jsPDF from 'jspdf';` to `import { jsPDF } from 'jspdf';` to ensure compatibility.
 
 ## Verification Plan
 
-### Automated Tests
-- **Run All Tests**: `mvn test`
-    - This will run the new `TimetableIntegrationTest` and all existing unit tests.
-- **Success Criteria**: All tests pass, specifically confirming the Genetic Algorithm produces a valid result via the API.
-
-### Manual Verification (User)
-1.  **Start Application**: Run backend and frontend.
-2.  **Navigate to Generate**: Go to `/generate`.
-3.  **Select Data**: Pick a Class, Teachers, and Subjects.
-4.  **Click Generate**:
-    -   **Observe**: The `NeonTriangleLoader` should appear.
-    -   **Result**: A table of classes should appear after a few seconds.
+### Manual Verification
+1.  **Frontend Logic Verification**: Since I cannot easily run the full stack with backend data, I will rely on code analysis.
+2.  **Browser Test (Optional)**: If the backend were available, I would:
+    - Open the application.
+    - Go to Teacher or Student timetable.
+    - Select a teacher/class to load data.
+    - Click "Export PDF".
+    - Verify no console errors and that the download initiates.

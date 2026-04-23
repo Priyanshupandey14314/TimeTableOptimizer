@@ -12,6 +12,7 @@ import { useToast } from '../context/ToastContext';
 const Subjects = () => {
     const [subjects, setSubjects] = useState([]);
     const [teachers, setTeachers] = useState([]);
+    const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const { addToast } = useToast();
@@ -19,7 +20,14 @@ const Subjects = () => {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentSubject, setCurrentSubject] = useState(null);
-    const [formData, setFormData] = useState({ name: '', code: '', teacherId: '' });
+    const [formData, setFormData] = useState({
+        name: '',
+        code: '',
+        teacherId: '',
+        classSectionId: '',
+        weeklyHours: '',
+        type: 'THEORY'
+    });
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -28,12 +36,14 @@ const Subjects = () => {
 
     const fetchData = async () => {
         try {
-            const [subjectsRes, teachersRes] = await Promise.all([
+            const [subjectsRes, teachersRes, classesRes] = await Promise.all([
                 axios.get('/api/subjects'),
-                axios.get('/api/teachers')
+                axios.get('/api/teachers'),
+                axios.get('/api/classsections')
             ]);
             setSubjects(subjectsRes.data);
             setTeachers(teachersRes.data);
+            setClasses(classesRes.data);
         } catch (error) {
             console.error('Error fetching data:', error);
             addToast('Failed to fetch data', 'error');
@@ -48,11 +58,21 @@ const Subjects = () => {
             setFormData({
                 name: subject.name,
                 code: subject.code,
-                teacherId: subject.teacher ? subject.teacher.id : ''
+                teacherId: subject.teacher ? subject.teacher.id : '',
+                classSectionId: subject.classSection ? subject.classSection.id : '',
+                weeklyHours: subject.weeklyHours || '',
+                type: subject.type || 'THEORY'
             });
         } else {
             setCurrentSubject(null);
-            setFormData({ name: '', code: '', teacherId: '' });
+            setFormData({
+                name: '',
+                code: '',
+                teacherId: '',
+                classSectionId: '',
+                weeklyHours: '',
+                type: 'THEORY'
+            });
         }
         setIsModalOpen(true);
     };
@@ -60,7 +80,7 @@ const Subjects = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setCurrentSubject(null);
-        setFormData({ name: '', code: '', teacherId: '' });
+        setFormData({ name: '', code: '', teacherId: '', classSectionId: '', weeklyHours: '', type: 'THEORY' });
     };
 
     const handleSubmit = async (e) => {
@@ -70,7 +90,10 @@ const Subjects = () => {
         const payload = {
             name: formData.name,
             code: formData.code,
-            teacher: formData.teacherId ? { id: formData.teacherId } : null
+            teacher: formData.teacherId ? { id: formData.teacherId } : null,
+            classSection: formData.classSectionId ? { id: formData.classSectionId } : null,
+            weeklyHours: parseInt(formData.weeklyHours),
+            type: formData.type
         };
 
         try {
@@ -107,6 +130,13 @@ const Subjects = () => {
     const columns = [
         { key: 'code', label: 'Code' },
         { key: 'name', label: 'Subject Name' },
+        { key: 'weeklyHours', label: 'Hours/Week' },
+        { key: 'type', label: 'Type' },
+        {
+            key: 'classSection',
+            label: 'Assigned Class',
+            render: (row) => row.classSection ? row.classSection.name : 'N/A'
+        },
         {
             key: 'teacher',
             label: 'Teacher',
@@ -161,15 +191,28 @@ const Subjects = () => {
                 title={currentSubject ? 'Edit Subject' : 'Add Subject'}
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Subject Code</label>
-                        <GlassInput
-                            required
-                            value={formData.code}
-                            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                            placeholder="CS101"
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Subject Code</label>
+                            <GlassInput
+                                required
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                placeholder="CS101"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Weekly Hours</label>
+                            <GlassInput
+                                required
+                                type="number"
+                                value={formData.weeklyHours}
+                                onChange={(e) => setFormData({ ...formData, weeklyHours: e.target.value })}
+                                placeholder="4"
+                            />
+                        </div>
                     </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Subject Name</label>
                         <GlassInput
@@ -179,6 +222,36 @@ const Subjects = () => {
                             placeholder="Introduction to Programming"
                         />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Type</label>
+                            <select
+                                value={formData.type}
+                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all"
+                            >
+                                <option value="THEORY" className="bg-gray-800">Theory</option>
+                                <option value="LAB" className="bg-gray-800">Lab</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Assigned Class</label>
+                            <select
+                                value={formData.classSectionId}
+                                onChange={(e) => setFormData({ ...formData, classSectionId: e.target.value })}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all"
+                            >
+                                <option value="" className="bg-gray-800">Select Class</option>
+                                {classes.map(cls => (
+                                    <option key={cls.id} value={cls.id} className="bg-gray-800">
+                                        {cls.name} ({cls.department})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Teacher</label>
                         <select
@@ -189,11 +262,12 @@ const Subjects = () => {
                             <option value="" className="bg-gray-800">Select Teacher</option>
                             {teachers.map(teacher => (
                                 <option key={teacher.id} value={teacher.id} className="bg-gray-800">
-                                    {teacher.name}
+                                    {teacher.name} ({teacher.department ? teacher.department.name : 'No Dept'})
                                 </option>
                             ))}
                         </select>
                     </div>
+
                     <div className="flex justify-end gap-3 mt-6">
                         <button
                             type="button"
